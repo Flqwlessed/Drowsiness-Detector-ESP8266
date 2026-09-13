@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#eef8ff">
+  <title>Driver Guard — Drowsiness Safety Simulation</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<div class="app-shell">
+
+  <header class="topbar">
+    <div class="brand-block">
+      <div class="kicker">ESP8266 • USB • REAL-TIME SIMULATION</div>
+      <h1>Driver Guard <span>Live</span></h1>
+      <p class="brand-subtitle">Real-time driver drowsiness detection and emergency response prototype</p>
+    </div>
+
+    <div class="header-actions">
+      <button id="audioButton" class="button secondary" type="button">🔊 Enable audio</button>
+      <button id="demoButton" class="button demo" type="button">▶ Demo mode</button>
+
+      <div id="connectionBadge" class="connection offline">
+        <span class="dot"></span>
+        <span id="connectionText">ESP8266 disconnected</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-grid">
+
+    <section class="hero-card card">
+
+      <div class="hero-top">
+        <div>
+          <div class="section-label">LIVE VEHICLE SIMULATION</div>
+          <h2 id="heroTitle">Cruising normally</h2>
+          <p class="hero-subtitle">Vehicle response changes automatically according to driver state</p>
+        </div>
+
+        <div class="speed-chip">
+          <div class="speed-caption">SIMULATED SPEED</div>
+          <strong id="speedValue">60</strong>
+          <span>km/h</span>
+        </div>
+      </div>
+
+      <div class="road-scene" id="roadScene">
+
+        <div class="sky-glow"></div>
+        <div class="sun"></div>
+
+        <div class="cloud-layer">
+          <div class="cloud cloud-1"><span></span><span></span><span></span></div>
+          <div class="cloud cloud-2"><span></span><span></span><span></span></div>
+          <div class="cloud cloud-3"><span></span><span></span><span></span></div>
+        </div>
+
+        <div class="mountains">
+          <div class="mountain m1"></div>
+          <div class="mountain m2"></div>
+          <div class="mountain m3"></div>
+        </div>
+
+        <div class="city">
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+        </div>
+
+        <div class="far-tree-line">
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+
+        <div class="road-wrapper">
+
+          <div class="roadside roadside-left">
+            <div class="road-tree tree-a"></div>
+            <div class="road-pole pole-a"></div>
+            <div class="road-tree tree-b"></div>
+            <div class="road-pole pole-b"></div>
+            <div class="road-tree tree-c"></div>
+          </div>
+
+          <div class="road">
+            <div class="road-texture"></div>
+
+            <div class="lane lane1"></div>
+            <div class="lane lane2"></div>
+            <div class="lane lane3"></div>
+            <div class="lane lane4"></div>
+            <div class="lane lane5"></div>
+            <div class="lane lane6"></div>
+            <div class="lane lane7"></div>
+
+            <div class="road-line road-line-left"></div>
+            <div class="road-line road-line-right"></div>
+          </div>
+
+          <div class="roadside roadside-right">
+            <div class="road-tree tree-d"></div>
+            <div class="road-pole pole-c"></div>
+            <div class="road-tree tree-e"></div>
+            <div class="road-pole pole-d"></div>
+            <div class="road-tree tree-f"></div>
+          </div>
+
+        </div>
+
+        <div id="car" class="car moving">
+
+          <div class="car-shadow"></div>
+
+          <div class="car-body">
+            <div class="car-roof">
+              <div class="windshield">
+                <div class="windshield-reflection"></div>
+              </div>
+            </div>
+
+            <div class="rear-panel">
+              <div id="leftHazard" class="indicator left-indicator"></div>
+              <div id="rightHazard" class="indicator right-indicator"></div>
+
+              <div id="leftBrake" class="brake-light brake-left"></div>
+              <div id="rightBrake" class="brake-light brake-right"></div>
+
+              <div class="center-brake-light"></div>
+              <div class="trunk-line"></div>
+              <div class="manufacturer-badge">DG</div>
+              <div class="license">DG 01</div>
+            </div>
+          </div>
+
+          <div class="wheel wheel-left">
+            <div class="wheel-rim">
+              <span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+
+          <div class="wheel wheel-right">
+            <div class="wheel-rim">
+              <span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="drive-status-panel">
+          <div class="drive-status-item">
+            <span class="drive-dot"></span>
+            <div>
+              <small>VEHICLE STATE</small>
+              <strong id="vehicleMotionState">MOVING</strong>
+            </div>
+          </div>
+
+          <div class="drive-status-divider"></div>
+
+          <div class="drive-status-item">
+            <div>
+              <small>TRANSMISSION</small>
+              <strong>DRIVE</strong>
+            </div>
+          </div>
+        </div>
+
+        <div id="decelerationOverlay" class="deceleration-overlay">
+          <span>AUTOMATIC DECELERATION</span>
+        </div>
+
+        <div id="stopMarker" class="stop-marker">
+          <div class="stop-icon">✓</div>
+          <div>
+            <small>SAFETY SYSTEM</small>
+            <strong>VEHICLE STOPPED</strong>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="hero-footer">
+        <div class="timeline-item"><span>0–2s</span><b>Monitoring</b><small>Normal blink filtering</small></div>
+        <div class="timeline-item"><span>2s+</span><b>Buzzer warning</b><small>Driver alert begins</small></div>
+        <div class="timeline-item"><span>5s+</span><b>Emergency braking</b><small>Progressive deceleration</small></div>
+        <div class="timeline-item"><span>10s</span><b>Full stop + SOS</b><small>Emergency state</small></div>
+      </div>
+
+    </section>
+
+    <section class="side-column">
+
+      <div class="card driver-card">
+
+        <div class="card-heading">
+          <div>
+            <div class="section-label">DRIVER MONITOR</div>
+            <h3>Eye Detection</h3>
+          </div>
+
+          <div class="live-badge"><span></span>LIVE</div>
+        </div>
+
+        <div id="eyeVisual" class="eye-visual open">
+          <div class="eye-shape">
+            <div class="iris"></div>
+          </div>
+
+          <div class="eye-copy">
+            <span>EYE STATUS</span>
+            <strong id="eyeStatus">OPEN</strong>
+            <small>Real-time sensor state</small>
+          </div>
+        </div>
+
+        <div class="metric-grid">
+          <div class="metric"><span>Sensor</span><b id="sensorValue">—</b></div>
+          <div class="metric"><span>Closed time</span><b><span id="closedSeconds">0.0</span>s</b></div>
+          <div class="metric"><span>Buzzer</span><b id="buzzerStatus">OFF</b></div>
+          <div class="metric"><span>System</span><b id="systemState">NORMAL</b></div>
+        </div>
+
+        <div class="sensor-meter">
+          <div class="sensor-meter-header">
+            <span>SENSOR SIGNAL</span>
+            <span>Threshold monitoring</span>
+          </div>
+
+          <div class="sensor-track">
+            <div id="sensorBar" class="sensor-bar"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="card brake-card">
+
+        <div class="card-heading">
+          <div>
+            <div class="section-label">AUTOMATIC BRAKING</div>
+            <h3>Safety Intervention</h3>
+          </div>
+        </div>
+
+        <div class="brake-number">
+          <strong id="brakeValue">0</strong><span>%</span>
+        </div>
+
+        <div class="progress">
+          <div id="brakeBar"></div>
+        </div>
+
+        <div class="brake-scale">
+          <span>0%</span><span>50%</span><span>100%</span>
+        </div>
+
+        <div class="safety-buttons">
+
+          <div id="hazardBox" class="safety-box">
+            <span class="safety-icon">⚠</span>
+            <div><small>HAZARDS</small><b>OFF</b></div>
+          </div>
+
+          <div id="hornBox" class="safety-box">
+            <span class="safety-icon">📣</span>
+            <div><small>HORN</small><b>OFF</b></div>
+          </div>
+
+        </div>
+
+        <div class="brake-note">
+          <span class="brake-note-icon">🛡</span>
+          <p>Braking percentage increases gradually while the driver's eyes remain closed.</p>
+        </div>
+
+      </div>
+
+    </section>
+
+    <section class="bottom-card card emergency-card">
+
+      <div class="emergency-left">
+
+        <div id="sosCircle" class="sos-circle">
+          <span>SOS</span>
+        </div>
+
+        <div class="emergency-copy">
+          <div class="section-label">EMERGENCY RESPONSE</div>
+          <span class="mini-label">STATUS</span>
+          <h3 id="sosStatus">STANDBY</h3>
+          <p id="sosDescription">SOS simulation will trigger after a complete simulated stop.</p>
+
+          <div class="sms-status-line">
+            <span>SMS:</span>
+            <strong id="smsStatus">STANDBY</strong>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="location-panel">
+
+        <div class="map-visual">
+          <div class="map-road mr1"></div>
+          <div class="map-road mr2"></div>
+          <div class="map-road mr3"></div>
+          <div class="map-road mr4"></div>
+
+          <div class="map-block block1"></div>
+          <div class="map-block block2"></div>
+          <div class="map-block block3"></div>
+          <div class="map-block block4"></div>
+
+          <div class="map-location-ring">
+            <div class="map-pin">●</div>
+          </div>
+        </div>
+
+        <div class="location-text">
+          <span class="mini-label">INCIDENT LOCATION</span>
+          <p id="locationText">Paste coordinates below or use Windows location.</p>
+
+          <div class="manual-location-box">
+            <label>
+              <span>LATITUDE</span>
+              <input
+                id="manualLatitude"
+                type="number"
+                step="any"
+                placeholder="19.123456"
+                autocomplete="off"
+              >
+            </label>
+
+            <label>
+              <span>LONGITUDE</span>
+              <input
+                id="manualLongitude"
+                type="number"
+                step="any"
+                placeholder="72.987654"
+                autocomplete="off"
+              >
+            </label>
+          </div>
+
+          <div id="manualLocationMessage" class="manual-location-message">
+            Paste the two numbers from Google Maps, then press USE THESE COORDINATES.
+          </div>
+
+          <div class="location-actions">
+            <button
+              id="setManualLocationButton"
+              class="maps-button manual-location-button"
+              type="button"
+            >
+              USE THESE COORDINATES
+            </button>
+
+            <button
+              id="testLocationButton"
+              class="maps-button test-location-button"
+              type="button"
+            >
+              TRY WINDOWS LOCATION
+            </button>
+
+            <a
+              id="mapsButton"
+              class="maps-button disabled"
+              href="#"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              OPEN LOCATION IN MAPS
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="event-panel">
+
+        <div class="event-header">
+          <div class="section-label">EVENT STREAM</div>
+          <span class="event-live">● LIVE</span>
+        </div>
+
+        <div id="events" class="events"></div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <footer>
+    <span>Driver Guard Prototype</span>
+    <span class="footer-divider">•</span>
+    <span>Simulation only — does not control a real vehicle or contact emergency services.</span>
+  </footer>
+
+</div>
+
+
+<div id="sosModalBackdrop" class="sos-modal-backdrop">
+
+  <div id="sosModal" class="sos-modal">
+
+    <div class="sos-modal-danger-strip">
+      <span class="danger-light"></span>
+      EMERGENCY SAFETY EVENT
+      <span class="danger-light"></span>
+    </div>
+
+    <div class="sos-modal-icon">
+      !
+    </div>
+
+    <div class="sos-modal-copy">
+      <div class="sos-modal-kicker">DRIVER GUARD SOS</div>
+      <h2>Vehicle safely stopped</h2>
+
+      <p>
+        Driver drowsiness remained detected long enough to trigger the emergency-stop simulation.
+      </p>
+    </div>
+
+    <div class="sos-modal-grid">
+
+      <div class="sos-modal-stat">
+        <span>VEHICLE</span>
+        <strong>STOPPED</strong>
+      </div>
+
+      <div class="sos-modal-stat">
+        <span>BRAKING</span>
+        <strong>100%</strong>
+      </div>
+
+      <div class="sos-modal-stat">
+        <span>HAZARDS</span>
+        <strong>ACTIVE</strong>
+      </div>
+
+      <div class="sos-modal-stat">
+        <span>SOS MESSAGE</span>
+        <strong id="modalSmsStatus">WAITING</strong>
+      </div>
+
+    </div>
+
+    <div class="sos-modal-location">
+
+      <div>
+        <span>INCIDENT LOCATION</span>
+        <strong id="modalLocationText">Requesting current location…</strong>
+      </div>
+
+      <a
+        id="modalMapsButton"
+        class="danger-map-button disabled"
+        href="#"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        OPEN MAP
+      </a>
+
+    </div>
+
+    <div class="sos-modal-warning">
+      TEST / STUDENT PROJECT SIMULATION — NO REAL EMERGENCY SERVICE IS CONTACTED.
+    </div>
+
+    <div class="sos-modal-actions">
+      <button
+        id="closeSosModal"
+        class="close-sos-button secondary-alert-button"
+        type="button"
+      >
+        CLOSE ALERT
+      </button>
+
+      <button
+        id="resetIncidentButton"
+        class="close-sos-button"
+        type="button"
+      >
+        RESET INCIDENT
+      </button>
+    </div>
+
+  </div>
+
+</div>
+<div class="map-section">
+    <div class="map-header">
+        <h2>LIVE VEHICLE LOCATION</h2>
+        <span>DriverGuard GPS</span>
+    </div>
+
+    <iframe
+        id="googleMap"
+        src="https://maps.google.com/maps?q=19.7094869,72.792461&z=16&output=embed"
+        width="100%"
+        height="350"
+        style="border:0; border-radius:18px;"
+        allowfullscreen=""
+        loading="lazy">
+    </iframe>
+
+    <div class="map-info">
+        <p>
+            Latitude:
+            <strong>19.7094869</strong>
+        </p>
+
+        <p>
+            Longitude:
+            <strong>72.792461</strong>
+        </p>
+
+        <a
+            href="https://www.google.com/maps?q=19.7094869,72.792461"
+            target="_blank"
+            rel="noopener noreferrer">
+            OPEN IN GOOGLE MAPS
+        </a>
+    </div>
+</div>
+
+
+<script src="/static/app.js"></script>
+
+</body>
+</html>
